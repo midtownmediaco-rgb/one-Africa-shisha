@@ -1,16 +1,10 @@
 const STORAGE_KEYS = { products: 'oneAfrica.products.v2', bills: 'oneAfrica.bills.v1', settings: 'oneAfrica.settings.v2' };
 const SHISHA_PRICE = 20000;
-const defaultProducts = [
-  { id: 'shisha-session', name: 'Shisha session', category: 'Shisha', price: SHISHA_PRICE }
-];
+const defaultProducts = [{ id: 'shisha-session', name: 'Shisha session', category: 'Shisha', price: SHISHA_PRICE }];
 const moneyFormatter = () => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'UGX', maximumFractionDigits: 0 });
 const money = value => moneyFormatter().format(Number(value) || 0);
 const safeLoad = (key, fallback) => { try { const value = JSON.parse(localStorage.getItem(key)); return value ?? fallback; } catch { return fallback; } };
-const state = {
-  products: safeLoad(STORAGE_KEYS.products, defaultProducts),
-  bills: safeLoad(STORAGE_KEYS.bills, []),
-  currency: 'UGX', category: 'All', search: '', cart: []
-};
+const state = { products: safeLoad(STORAGE_KEYS.products, defaultProducts), bills: safeLoad(STORAGE_KEYS.bills, []), currency: 'UGX', category: 'All', search: '', cart: [] };
 const $ = selector => document.querySelector(selector);
 const escapeHTML = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
 const save = () => {
@@ -18,7 +12,6 @@ const save = () => {
   localStorage.setItem(STORAGE_KEYS.bills, JSON.stringify(state.bills));
   localStorage.setItem(STORAGE_KEYS.settings, JSON.stringify({ currency: state.currency }));
 };
-
 function totals() {
   const subtotal = state.cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
   const discount = Math.min(Math.max(0, Number($('#discount').value) || 0), subtotal);
@@ -84,7 +77,7 @@ function addToCart(product) {
   renderCart();
 }
 function showReceipt(bill) {
-  $('#receipt-content').innerHTML = `<div class="receipt"><div class="receipt-brand"><span class="brand-mark">OA</span><h2>ONE AFRICA SHISHA</h2><p>SALES RECEIPT</p></div><div class="receipt-meta"><span>Invoice</span><strong>${escapeHTML(bill.id)}</strong><span>Date</span><strong>${escapeHTML(paymentTime(bill))}</strong><span>Customer</span><strong>${escapeHTML(bill.customer || 'Walk-in')}</strong><span>Payment</span><strong>${escapeHTML(bill.paymentMethod)}</strong></div><div class="receipt-lines">${bill.items.map(item => `<div class="receipt-item"><span>${escapeHTML(item.name)} × ${item.quantity}${item.flavors ? `<small>Flavor mix: ${escapeHTML(item.flavors)}</small>` : ''}</span><strong>${money(item.price * item.quantity)}</strong></div>`).join('')}</div><div class="receipt-totals"><div><span>Subtotal</span><strong>${money(bill.subtotal)}</strong></div><div><span>Discount</span><strong>−${money(bill.discount)}</strong></div><div><span>Tax (${bill.taxRate}%)</span><strong>${money(bill.tax)}</strong></div><div class="grand-total"><span>Total paid</span><strong>${money(bill.total)}</strong></div>${bill.paymentMethod === 'Cash' ? `<div><span>Cash received</span><strong>${money(bill.cashTendered)}</strong></div><div><span>Change</span><strong>${money(bill.change)}</strong></div>` : ''}</div><p class="receipt-thanks">Thank you for visiting One Africa Shisha.</p><p class="receipt-legal">Please follow local age-verification and tobacco regulations.</p></div>`;
+  $('#receipt-content').innerHTML = `<div class="receipt"><div class="receipt-brand"><span class="brand-mark">OA</span><h2>ONE AFRICA SHISHA</h2><p>SALES RECEIPT</p></div><div class="receipt-meta"><span>Invoice</span><strong>${escapeHTML(bill.id)}</strong><span>Date</span><strong>${escapeHTML(paymentTime(bill))}</strong><span>Customer</span><strong>${escapeHTML(bill.customer || 'Walk-in')}</strong><span>Served by</span><strong>${escapeHTML(bill.servedBy || 'Not recorded')}</strong><span>Payment</span><strong>${escapeHTML(bill.paymentMethod)}</strong></div><div class="receipt-lines">${bill.items.map(item => `<div class="receipt-item"><span>${escapeHTML(item.name)} × ${item.quantity}${item.flavors ? `<small>Flavor mix: ${escapeHTML(item.flavors)}</small>` : ''}</span><strong>${money(item.price * item.quantity)}</strong></div>`).join('')}</div><div class="receipt-totals"><div><span>Subtotal</span><strong>${money(bill.subtotal)}</strong></div><div><span>Discount</span><strong>−${money(bill.discount)}</strong></div><div><span>Tax (${bill.taxRate}%)</span><strong>${money(bill.tax)}</strong></div><div class="grand-total"><span>Total paid</span><strong>${money(bill.total)}</strong></div>${bill.paymentMethod === 'Cash' ? `<div><span>Cash received</span><strong>${money(bill.cashTendered)}</strong></div><div><span>Change</span><strong>${money(bill.change)}</strong></div>` : ''}</div><p class="receipt-thanks">Thank you for visiting One Africa Shisha.</p><p class="receipt-legal">Please follow local age-verification and tobacco regulations.</p></div>`;
   $('#receipt-dialog').showModal();
 }
 function toast(message) {
@@ -101,7 +94,6 @@ function navigate() {
   if (valid === 'dashboard') renderDashboard();
   if (valid === 'history') renderHistory();
 }
-
 $('#date-label').textContent = new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
 $('#product-search').addEventListener('input', event => { state.search = event.target.value; renderProducts(); });
 $('#category-tabs').addEventListener('click', event => { const button = event.target.closest('[data-category]'); if (!button) return; state.category = button.dataset.category; renderProducts(); });
@@ -131,15 +123,17 @@ $('#product-form').addEventListener('submit', event => {
   const id = `custom-${Date.now()}`;
   state.products.push({ id, name, category, price }); save(); $('#product-form').reset(); $('#new-price').readOnly = false; $('#new-price').placeholder = 'Enter price in UGX'; $('#product-dialog').close(); state.category = category; renderProducts(); toast('Menu item added');
 });
-$('#checkout').addEventListener('click', () => { if (!state.cart.length) return; $('#payment-due').textContent = money(totals().total); $('#payment-error').textContent = ''; $('#payment-method').value = 'Cash'; $('#cash-tendered').value = ''; $('#cash-tender-wrap').classList.remove('hidden'); $('#payment-dialog').showModal(); });
+$('#checkout').addEventListener('click', () => { if (!state.cart.length) return; $('#payment-due').textContent = money(totals().total); $('#payment-error').textContent = ''; $('#payment-method').value = 'Cash'; $('#cash-tendered').value = ''; $('#served-by').value = ''; $('#cash-tender-wrap').classList.remove('hidden'); $('#payment-dialog').showModal(); });
 $('#payment-method').addEventListener('change', () => { $('#cash-tender-wrap').classList.toggle('hidden', $('#payment-method').value !== 'Cash'); $('#payment-error').textContent = ''; });
 $('#cash-tendered').addEventListener('input', () => { const due = totals().total, tendered = Number($('#cash-tendered').value); $('#change-due').textContent = tendered >= due ? money(tendered - due) : '—'; });
 $('#payment-form').addEventListener('submit', event => {
   event.preventDefault();
+  const servedBy = $('#served-by').value.trim();
+  if (!servedBy) { $('#payment-error').textContent = 'Enter the name of the staff member serving this customer.'; $('#served-by').focus(); return; }
   const billTotals = totals(), paymentMethod = $('#payment-method').value;
   const cashTendered = paymentMethod === 'Cash' ? Number($('#cash-tendered').value) : billTotals.total;
   if (paymentMethod === 'Cash' && (!Number.isFinite(cashTendered) || cashTendered < billTotals.total)) { $('#payment-error').textContent = 'Cash received must be at least the total due.'; return; }
-  const bill = { id: `OA-${Date.now().toString().slice(-8)}`, createdAt: new Date().toISOString(), customer: $('#customer-name').value.trim(), items: state.cart.map(item => ({ ...item })), ...billTotals, taxRate: Math.min(100, Math.max(0, Number($('#tax-rate').value) || 0)), paymentMethod, cashTendered, change: paymentMethod === 'Cash' ? cashTendered - billTotals.total : 0, currency: 'UGX' };
+  const bill = { id: `OA-${Date.now().toString().slice(-8)}`, createdAt: new Date().toISOString(), customer: $('#customer-name').value.trim(), servedBy, items: state.cart.map(item => ({ ...item })), ...billTotals, taxRate: Math.min(100, Math.max(0, Number($('#tax-rate').value) || 0)), paymentMethod, cashTendered, change: paymentMethod === 'Cash' ? cashTendered - billTotals.total : 0, currency: 'UGX' };
   state.bills.push(bill); state.cart = []; $('#customer-name').value = ''; $('#discount').value = '0'; $('#tax-rate').value = '0'; save(); renderAll(); $('#payment-dialog').close(); showReceipt(bill); toast('Bill completed successfully');
 });
 document.addEventListener('click', event => {
