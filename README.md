@@ -8,17 +8,17 @@ Open `index.html` in a browser, or serve this directory with any static web serv
 
 ## Features
 
-- Product menu grouped by category, quick search, and add-item form.
+- Shisha session price fixed at **UGX 20,000 per session**; all shisha items use this standard price.
+- Flavor-mix field on each shisha bill item for entering the customer's requested combination; suggestions include mint, double apple, grape, blueberry, watermelon, lemon, strawberry, mango, peach, and vanilla. Free-text combinations are supported.
+- Add non-shisha menu items with a custom UGX price.
 - Bill cart with quantity controls, optional customer name, discount, and configurable tax rate.
 - Checkout by cash, card, or mobile money. Cash checkout calculates change and prevents underpayment.
-- Printable itemized receipts and completed-bill history with filters.
+- Printable itemized receipts (including the requested flavor mix) and completed-bill history.
 - Dashboard with today's sales, completed bill count, and average bill.
-- Currency display choices for USD, ZMW, KES, UGX, TZS, GHS, NGN, and ZAR.
 - Responsive layout for desktop and mobile screens.
 
 ## Notes
 
-- The sample menu and prices are examples. Update them using **Add item** and select the appropriate currency for your business before billing.
-- Tax defaults to 0%; set the correct rate for your location. Discounts are entered as a fixed amount in the selected currency.
+- Discount and tax settings should match your business and local tax requirements.
 - Browser-local data can be lost when browser storage is cleared. Export/backup, user accounts, inventory, and cloud synchronization are not included.
 - Use only for lawful sales and follow local age-verification, licensing, tax, and tobacco regulations.

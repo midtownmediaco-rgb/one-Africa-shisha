@@ -1,26 +1,15 @@
-const STORAGE_KEYS = { products: 'oneAfrica.products.v1', bills: 'oneAfrica.bills.v1', settings: 'oneAfrica.settings.v1' };
+const STORAGE_KEYS = { products: 'oneAfrica.products.v2', bills: 'oneAfrica.bills.v1', settings: 'oneAfrica.settings.v2' };
+const SHISHA_PRICE = 20000;
 const defaultProducts = [
-  { id: 'shisha-classic', name: 'Classic shisha', category: 'Shisha', price: 18 },
-  { id: 'shisha-premium', name: 'Premium shisha', category: 'Shisha', price: 25 },
-  { id: 'shisha-double', name: 'Double apple', category: 'Shisha', price: 22 },
-  { id: 'shisha-mint', name: 'Mint & chill', category: 'Shisha', price: 22 },
-  { id: 'shisha-fruit', name: 'Fruit mix', category: 'Shisha', price: 24 },
-  { id: 'drink-water', name: 'Bottled water', category: 'Drinks', price: 2 },
-  { id: 'drink-soda', name: 'Soft drink', category: 'Drinks', price: 3 },
-  { id: 'drink-juice', name: 'Fresh juice', category: 'Drinks', price: 5 },
-  { id: 'food-fries', name: 'Seasoned fries', category: 'Food', price: 7 },
-  { id: 'food-wings', name: 'Chicken wings', category: 'Food', price: 12 },
-  { id: 'extra-coal', name: 'Coal refresh', category: 'Extras', price: 4 }
+  { id: 'shisha-session', name: 'Shisha session', category: 'Shisha', price: SHISHA_PRICE }
 ];
-const currencySymbols = { USD: '$', ZMW: 'K', KES: 'KSh', UGX: 'USh', TZS: 'TSh', GHS: '₵', NGN: '₦', ZAR: 'R' };
-const moneyFormatter = () => new Intl.NumberFormat(undefined, { style: 'currency', currency: state.currency, minimumFractionDigits: 2 });
+const moneyFormatter = () => new Intl.NumberFormat(undefined, { style: 'currency', currency: 'UGX', maximumFractionDigits: 0 });
 const money = value => moneyFormatter().format(Number(value) || 0);
 const safeLoad = (key, fallback) => { try { const value = JSON.parse(localStorage.getItem(key)); return value ?? fallback; } catch { return fallback; } };
 const state = {
   products: safeLoad(STORAGE_KEYS.products, defaultProducts),
   bills: safeLoad(STORAGE_KEYS.bills, []),
-  currency: safeLoad(STORAGE_KEYS.settings, {}).currency || 'USD',
-  category: 'All', search: '', cart: []
+  currency: 'UGX', category: 'All', search: '', cart: []
 };
 const $ = selector => document.querySelector(selector);
 const escapeHTML = value => String(value).replace(/[&<>"']/g, char => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[char]));
@@ -46,11 +35,11 @@ function renderProducts() {
   renderCategories();
   const query = state.search.trim().toLowerCase();
   const products = state.products.filter(product => (state.category === 'All' || product.category === state.category) && product.name.toLowerCase().includes(query));
-  $('#product-grid').innerHTML = products.map(product => `<button class="product-card" data-product="${escapeHTML(product.id)}"><span class="product-category">${escapeHTML(product.category)}</span><strong>${escapeHTML(product.name)}</strong><span class="product-price">${money(product.price)}</span><span class="product-add">＋</span></button>`).join('');
+  $('#product-grid').innerHTML = products.map(product => `<button class="product-card" data-product="${escapeHTML(product.id)}"><span class="product-category">${escapeHTML(product.category)}</span><strong>${escapeHTML(product.name)}</strong><span class="product-price">${money(product.category === 'Shisha' ? SHISHA_PRICE : product.price)}</span><span class="product-add">＋</span></button>`).join('');
   $('#products-empty').classList.toggle('hidden', products.length > 0);
 }
 function renderCart() {
-  $('#cart-items').innerHTML = state.cart.map(item => `<div class="cart-item"><div class="cart-item-info"><strong>${escapeHTML(item.name)}</strong><span>${money(item.price)} each</span></div><div class="quantity-control"><button data-quantity="-1" data-id="${escapeHTML(item.id)}" aria-label="Decrease ${escapeHTML(item.name)} quantity">−</button><span>${item.quantity}</span><button data-quantity="1" data-id="${escapeHTML(item.id)}" aria-label="Increase ${escapeHTML(item.name)} quantity">＋</button></div><strong class="line-total">${money(item.price * item.quantity)}</strong></div>`).join('');
+  $('#cart-items').innerHTML = state.cart.map(item => `<div class="cart-item"><div class="cart-item-info"><strong>${escapeHTML(item.name)}</strong><span>${money(item.price)} each</span>${item.category === 'Shisha' ? `<label class="flavor-label">Flavor mix<input class="flavor-input" data-flavor="${escapeHTML(item.id)}" value="${escapeHTML(item.flavors || '')}" placeholder="e.g. Mint + Double Apple" list="flavor-suggestions"><small>Enter the flavors requested by the customer.</small></label>` : ''}</div><div class="quantity-control"><button data-quantity="-1" data-id="${escapeHTML(item.id)}" aria-label="Decrease ${escapeHTML(item.name)} quantity">−</button><span>${item.quantity}</span><button data-quantity="1" data-id="${escapeHTML(item.id)}" aria-label="Increase ${escapeHTML(item.name)} quantity">＋</button></div><strong class="line-total">${money(item.price * item.quantity)}</strong></div>`).join('');
   const quantity = state.cart.reduce((sum, item) => sum + item.quantity, 0);
   $('#cart-item-count').textContent = `${quantity} ${quantity === 1 ? 'item' : 'items'}`;
   $('#cart-empty').classList.toggle('hidden', state.cart.length > 0);
@@ -88,13 +77,14 @@ function renderHistory() {
 }
 function renderAll() { renderProducts(); renderCart(); renderDashboard(); renderHistory(); }
 function addToCart(product) {
+  const normalizedProduct = { ...product, price: product.category === 'Shisha' ? SHISHA_PRICE : product.price };
   const item = state.cart.find(entry => entry.id === product.id);
   if (item) item.quantity += 1;
-  else state.cart.push({ ...product, quantity: 1 });
+  else state.cart.push({ ...normalizedProduct, quantity: 1, flavors: '' });
   renderCart();
 }
 function showReceipt(bill) {
-  $('#receipt-content').innerHTML = `<div class="receipt"><div class="receipt-brand"><span class="brand-mark">OA</span><h2>ONE AFRICA SHISHA</h2><p>SALES RECEIPT</p></div><div class="receipt-meta"><span>Invoice</span><strong>${escapeHTML(bill.id)}</strong><span>Date</span><strong>${escapeHTML(paymentTime(bill))}</strong><span>Customer</span><strong>${escapeHTML(bill.customer || 'Walk-in')}</strong><span>Payment</span><strong>${escapeHTML(bill.paymentMethod)}</strong></div><div class="receipt-lines">${bill.items.map(item => `<div><span>${escapeHTML(item.name)} × ${item.quantity}</span><strong>${money(item.price * item.quantity)}</strong></div>`).join('')}</div><div class="receipt-totals"><div><span>Subtotal</span><strong>${money(bill.subtotal)}</strong></div><div><span>Discount</span><strong>−${money(bill.discount)}</strong></div><div><span>Tax (${bill.taxRate}%)</span><strong>${money(bill.tax)}</strong></div><div class="grand-total"><span>Total paid</span><strong>${money(bill.total)}</strong></div>${bill.paymentMethod === 'Cash' ? `<div><span>Cash received</span><strong>${money(bill.cashTendered)}</strong></div><div><span>Change</span><strong>${money(bill.change)}</strong></div>` : ''}</div><p class="receipt-thanks">Thank you for visiting One Africa Shisha.</p><p class="receipt-legal">Please follow local age-verification and tobacco regulations.</p></div>`;
+  $('#receipt-content').innerHTML = `<div class="receipt"><div class="receipt-brand"><span class="brand-mark">OA</span><h2>ONE AFRICA SHISHA</h2><p>SALES RECEIPT</p></div><div class="receipt-meta"><span>Invoice</span><strong>${escapeHTML(bill.id)}</strong><span>Date</span><strong>${escapeHTML(paymentTime(bill))}</strong><span>Customer</span><strong>${escapeHTML(bill.customer || 'Walk-in')}</strong><span>Payment</span><strong>${escapeHTML(bill.paymentMethod)}</strong></div><div class="receipt-lines">${bill.items.map(item => `<div class="receipt-item"><span>${escapeHTML(item.name)} × ${item.quantity}${item.flavors ? `<small>Flavor mix: ${escapeHTML(item.flavors)}</small>` : ''}</span><strong>${money(item.price * item.quantity)}</strong></div>`).join('')}</div><div class="receipt-totals"><div><span>Subtotal</span><strong>${money(bill.subtotal)}</strong></div><div><span>Discount</span><strong>−${money(bill.discount)}</strong></div><div><span>Tax (${bill.taxRate}%)</span><strong>${money(bill.tax)}</strong></div><div class="grand-total"><span>Total paid</span><strong>${money(bill.total)}</strong></div>${bill.paymentMethod === 'Cash' ? `<div><span>Cash received</span><strong>${money(bill.cashTendered)}</strong></div><div><span>Change</span><strong>${money(bill.change)}</strong></div>` : ''}</div><p class="receipt-thanks">Thank you for visiting One Africa Shisha.</p><p class="receipt-legal">Please follow local age-verification and tobacco regulations.</p></div>`;
   $('#receipt-dialog').showModal();
 }
 function toast(message) {
@@ -113,22 +103,33 @@ function navigate() {
 }
 
 $('#date-label').textContent = new Date().toLocaleDateString([], { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' });
-$('#currency').value = state.currency;
-$('#currency').addEventListener('change', event => { state.currency = event.target.value; save(); renderAll(); });
 $('#product-search').addEventListener('input', event => { state.search = event.target.value; renderProducts(); });
 $('#category-tabs').addEventListener('click', event => { const button = event.target.closest('[data-category]'); if (!button) return; state.category = button.dataset.category; renderProducts(); });
 $('#product-grid').addEventListener('click', event => { const card = event.target.closest('[data-product]'); if (!card) return; const product = state.products.find(entry => entry.id === card.dataset.product); if (product) addToCart(product); });
+$('#cart-items').addEventListener('input', event => {
+  const field = event.target.closest('[data-flavor]');
+  if (!field) return;
+  const item = state.cart.find(entry => entry.id === field.dataset.flavor);
+  if (item) item.flavors = field.value;
+});
 $('#cart-items').addEventListener('click', event => { const button = event.target.closest('[data-quantity]'); if (!button) return; const item = state.cart.find(entry => entry.id === button.dataset.id); if (!item) return; item.quantity += Number(button.dataset.quantity); if (item.quantity <= 0) state.cart = state.cart.filter(entry => entry.id !== item.id); renderCart(); });
 $('#clear-cart').addEventListener('click', () => { if (!state.cart.length || confirm('Clear all items from this bill?')) { state.cart = []; $('#customer-name').value = ''; $('#discount').value = '0'; $('#tax-rate').value = '0'; renderCart(); } });
 $('#discount').addEventListener('input', renderCart);
 $('#tax-rate').addEventListener('input', renderCart);
 $('#add-product-open').addEventListener('click', () => $('#product-dialog').showModal());
+$('#new-category').addEventListener('change', event => {
+  const isShisha = event.target.value === 'Shisha';
+  $('#new-price').readOnly = isShisha;
+  $('#new-price').value = isShisha ? String(SHISHA_PRICE) : '';
+  $('#new-price').placeholder = isShisha ? 'Fixed at 20,000 UGX' : 'Enter price in UGX';
+});
 $('#product-form').addEventListener('submit', event => {
   event.preventDefault();
-  const name = $('#new-name').value.trim(), price = Number($('#new-price').value), category = $('#new-category').value;
+  const name = $('#new-name').value.trim(), category = $('#new-category').value;
+  const price = category === 'Shisha' ? SHISHA_PRICE : Number($('#new-price').value);
   if (!name || !Number.isFinite(price) || price <= 0) return;
   const id = `custom-${Date.now()}`;
-  state.products.push({ id, name, category, price }); save(); $('#product-form').reset(); $('#product-dialog').close(); state.category = category; renderProducts(); toast('Menu item added');
+  state.products.push({ id, name, category, price }); save(); $('#product-form').reset(); $('#new-price').readOnly = false; $('#new-price').placeholder = 'Enter price in UGX'; $('#product-dialog').close(); state.category = category; renderProducts(); toast('Menu item added');
 });
 $('#checkout').addEventListener('click', () => { if (!state.cart.length) return; $('#payment-due').textContent = money(totals().total); $('#payment-error').textContent = ''; $('#payment-method').value = 'Cash'; $('#cash-tendered').value = ''; $('#cash-tender-wrap').classList.remove('hidden'); $('#payment-dialog').showModal(); });
 $('#payment-method').addEventListener('change', () => { $('#cash-tender-wrap').classList.toggle('hidden', $('#payment-method').value !== 'Cash'); $('#payment-error').textContent = ''; });
@@ -138,7 +139,7 @@ $('#payment-form').addEventListener('submit', event => {
   const billTotals = totals(), paymentMethod = $('#payment-method').value;
   const cashTendered = paymentMethod === 'Cash' ? Number($('#cash-tendered').value) : billTotals.total;
   if (paymentMethod === 'Cash' && (!Number.isFinite(cashTendered) || cashTendered < billTotals.total)) { $('#payment-error').textContent = 'Cash received must be at least the total due.'; return; }
-  const bill = { id: `OA-${Date.now().toString().slice(-8)}`, createdAt: new Date().toISOString(), customer: $('#customer-name').value.trim(), items: state.cart.map(item => ({ ...item })), ...billTotals, taxRate: Math.min(100, Math.max(0, Number($('#tax-rate').value) || 0)), paymentMethod, cashTendered, change: paymentMethod === 'Cash' ? cashTendered - billTotals.total : 0, currency: state.currency };
+  const bill = { id: `OA-${Date.now().toString().slice(-8)}`, createdAt: new Date().toISOString(), customer: $('#customer-name').value.trim(), items: state.cart.map(item => ({ ...item })), ...billTotals, taxRate: Math.min(100, Math.max(0, Number($('#tax-rate').value) || 0)), paymentMethod, cashTendered, change: paymentMethod === 'Cash' ? cashTendered - billTotals.total : 0, currency: 'UGX' };
   state.bills.push(bill); state.cart = []; $('#customer-name').value = ''; $('#discount').value = '0'; $('#tax-rate').value = '0'; save(); renderAll(); $('#payment-dialog').close(); showReceipt(bill); toast('Bill completed successfully');
 });
 document.addEventListener('click', event => {
